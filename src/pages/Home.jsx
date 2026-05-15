@@ -51,7 +51,7 @@ export default function Home() {
             style={{ background: 'rgba(183,110,121,0.1)', color: '#9b4f5e', border: '1px solid rgba(183,110,121,0.2)', letterSpacing: '0.06em' }}
           >
             <Sparkles size={12} />
-            PREMIUM BEAUTY STUDIO · LOS ANGELES
+            PREMIUM BEAUTY STUDIO · CEBU
           </div>
 
           <h1

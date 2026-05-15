@@ -1,19 +1,15 @@
 import { create } from 'zustand'
 
 export const STEPS = {
-  SERVICES: 1,
-  STAFF: 2,
-  DATETIME: 3,
-  DETAILS: 4,
-  SUMMARY: 5,
+  AVAILABILITY: 1,
+  DETAILS: 2,
+  SUMMARY: 3,
 }
 
 export const STEP_LABELS = [
-  { step: 1, label: 'Services' },
-  { step: 2, label: 'Stylist' },
-  { step: 3, label: 'Date & Time' },
-  { step: 4, label: 'Your Details' },
-  { step: 5, label: 'Review' },
+  { step: 1, label: 'Date & Services' },
+  { step: 2, label: 'Your Details' },
+  { step: 3, label: 'Review' },
 ]
 
 const useBookingStore = create((set, get) => ({
@@ -22,7 +18,7 @@ const useBookingStore = create((set, get) => ({
   salon: null,
 
   // Current step
-  currentStep: STEPS.SERVICES,
+  currentStep: STEPS.AVAILABILITY,
 
   // Step 1: selected services
   selectedServices: [],
@@ -56,7 +52,7 @@ const useBookingStore = create((set, get) => ({
   })),
 
   goToPrevStep: () => set((state) => ({
-    currentStep: Math.max(state.currentStep - 1, STEPS.SERVICES),
+    currentStep: Math.max(state.currentStep - 1, STEPS.AVAILABILITY),
   })),
 
   toggleService: (service) => set((state) => {
@@ -69,11 +65,15 @@ const useBookingStore = create((set, get) => ({
 
   clearServices: () => set({ selectedServices: [] }),
 
-  setSelectedStaff: (staff) => set({ selectedStaff: staff, noPreference: false }),
+  setSelectedStaff: (staff) => set({ selectedStaff: staff, noPreference: false, selectedTime: null }),
 
-  setNoPreference: () => set({ selectedStaff: null, noPreference: true }),
+  setNoPreference: () => set({ selectedStaff: null, noPreference: true, selectedTime: null }),
 
-  setSelectedDate: (date) => set({ selectedDate: date, selectedTime: null }),
+  // Sets selectedStaff without touching noPreference or selectedTime — used to
+  // silently assign a concrete staff member when the user picks "any available".
+  assignStaff: (staff) => set({ selectedStaff: staff }),
+
+  setSelectedDate: (date) => set({ selectedDate: date, selectedTime: null, selectedStaff: null, noPreference: false }),
 
   setSelectedTime: (time) => set({ selectedTime: time }),
 
@@ -101,7 +101,7 @@ const useBookingStore = create((set, get) => ({
   },
 
   resetBooking: () => set({
-    currentStep: STEPS.SERVICES,
+    currentStep: STEPS.AVAILABILITY,
     selectedServices: [],
     selectedStaff: null,
     noPreference: false,

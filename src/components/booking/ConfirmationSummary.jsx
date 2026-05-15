@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { format, addMinutes, parse } from 'date-fns'
 import { Calendar, Clock, User, Scissors, DollarSign, FileText, Loader } from 'lucide-react'
-import useBookingStore from '../../store/bookingStore'
+import useBookingStore, { STEPS } from '../../store/bookingStore'
 import { getOrCreateClient, createAppointment } from '../../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
@@ -27,7 +27,7 @@ export default function ConfirmationSummary() {
   const {
     salonId, selectedServices, selectedStaff, noPreference,
     selectedDate, selectedTime, clientDetails,
-    setConfirmedAppointment, goToPrevStep, getTotalDuration, getTotalPrice,
+    setConfirmedAppointment, goToPrevStep, setCurrentStep, getTotalDuration, getTotalPrice,
     getServiceIds, getServicePricesMap,
   } = useBookingStore()
 
@@ -75,7 +75,12 @@ export default function ConfirmationSummary() {
       setConfirmedAppointment(appointment)
       navigate('/confirmation')
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      const msg = err.message || 'Something went wrong. Please try again.'
+      setError(msg)
+      // Double-booking trigger returns code P0001; send the user back to pick a new time.
+      if (err.code === 'P0001') {
+        setCurrentStep(STEPS.AVAILABILITY)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -112,7 +117,7 @@ export default function ConfirmationSummary() {
               ))}
             </ul>
           } />
-          <SummaryRow icon={User} label="Stylist" value={selectedStaff ? `${selectedStaff.name} · ${selectedStaff.role}` : 'No preference — any available stylist'} />
+          <SummaryRow icon={User} label="Stylist" value={noPreference ? 'Any available stylist' : selectedStaff ? `${selectedStaff.name} · ${selectedStaff.role}` : '—'} />
           <SummaryRow icon={Calendar} label="Date" value={selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : '—'} />
           <SummaryRow icon={Clock} label="Time" value={selectedTime ? `${formatTime(selectedTime)} — ${formatTime(endTime())} (${duration} min)` : '—'} />
           <SummaryRow icon={User} label="Client" value={

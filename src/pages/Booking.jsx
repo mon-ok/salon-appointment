@@ -1,18 +1,14 @@
 import { useEffect } from 'react'
 import useBookingStore, { STEPS } from '../store/bookingStore'
 import ProgressBar from '../components/ui/ProgressBar'
-import ServiceSelection from '../components/booking/ServiceSelection'
-import StaffSelection from '../components/booking/StaffSelection'
-import DateTimeSelection from '../components/booking/DateTimeSelection'
+import AvailabilityGrid from '../components/booking/AvailabilityGrid'
 import ClientDetails from '../components/booking/ClientDetails'
 import ConfirmationSummary from '../components/booking/ConfirmationSummary'
 
 const SALON_ID = import.meta.env.VITE_SALON_ID || '00000000-0000-0000-0000-000000000001'
 
 const STEP_COMPONENTS = {
-  [STEPS.SERVICES]: ServiceSelection,
-  [STEPS.STAFF]: StaffSelection,
-  [STEPS.DATETIME]: DateTimeSelection,
+  [STEPS.AVAILABILITY]: AvailabilityGrid,
   [STEPS.DETAILS]: ClientDetails,
   [STEPS.SUMMARY]: ConfirmationSummary,
 }
@@ -26,11 +22,11 @@ export default function Booking() {
     }
   }, [salonId, setSalon])
 
-  const StepComponent = STEP_COMPONENTS[currentStep] || ServiceSelection
+  const StepComponent = STEP_COMPONENTS[currentStep] || AvailabilityGrid
 
   return (
     <div className="gradient-mesh min-h-screen" style={{ width: '100%', paddingTop: '96px' }}>
-      <div className="px-6 sm:px-10 lg:px-16" style={{ maxWidth: '56rem', marginLeft: 'auto', marginRight: 'auto', width: '100%', paddingBottom: '3rem' }}>
+      <div className="px-6 sm:px-10 lg:px-16" style={{ maxWidth: '96rem', marginLeft: 'auto', marginRight: 'auto', width: '100%', paddingBottom: '3rem' }}>
         {/* Header */}
         <div className="text-center" style={{ marginBottom: '2rem' }}>
           <p
@@ -63,7 +59,7 @@ export default function Booking() {
         {/* Step Content */}
         <div
           className="glass-card rounded-3xl"
-          style={{ maxWidth: '960px', margin: '0 auto', padding: '2.5rem' }}
+          style={{ maxWidth: '1440px', margin: '0 auto', padding: '2.5rem' }}
         >
           <StepComponent />
         </div>

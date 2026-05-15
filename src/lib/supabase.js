@@ -56,6 +56,27 @@ export async function getStaffForServices(serviceIds) {
     .filter(Boolean)
 }
 
+export async function getStaffWithServices(salonId) {
+  const { data, error } = await supabase
+    .from('staff')
+    .select('*, staff_services(service_id)')
+    .eq('salon_id', salonId)
+    .eq('is_available', true)
+  if (error) throw error
+  return data
+}
+
+export async function getAllBookedSlotsForDate(salonId, date) {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('staff_id, start_time, end_time')
+    .eq('salon_id', salonId)
+    .eq('appointment_date', date)
+    .in('status', ['pending', 'confirmed'])
+  if (error) throw error
+  return data
+}
+
 export async function getBookedSlots(staffId, date) {
   const { data, error } = await supabase
     .from('appointments')
@@ -146,4 +167,136 @@ export async function updateAppointmentStatus(appointmentId, status) {
     .single()
   if (error) throw error
   return data
+}
+
+// ── Admin: Staff ────────────────────────────────────────────
+
+export async function getAllStaff(salonId) {
+  const { data, error } = await supabase
+    .from('staff')
+    .select('*, staff_services(service_id)')
+    .eq('salon_id', salonId)
+    .order('name')
+  if (error) throw error
+  return data
+}
+
+export async function createStaff({ salonId, name, role, bio }) {
+  const { data, error } = await supabase
+    .from('staff')
+    .insert({ salon_id: salonId, name, role: role || null, bio: bio || null, is_available: true })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateStaff(id, updates) {
+  const { data, error } = await supabase
+    .from('staff')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function setStaffServices(staffId, serviceIds) {
+  await supabase.from('staff_services').delete().eq('staff_id', staffId)
+  if (serviceIds.length === 0) return
+  const { error } = await supabase
+    .from('staff_services')
+    .insert(serviceIds.map((service_id) => ({ staff_id: staffId, service_id })))
+  if (error) throw error
+}
+
+// ── Admin: Services ─────────────────────────────────────────
+
+export async function createService({ salonId, name, category, description, price, durationMinutes }) {
+  const { data, error } = await supabase
+    .from('services')
+    .insert({
+      salon_id: salonId,
+      name,
+      category,
+      description: description || null,
+      price,
+      duration_minutes: durationMinutes,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateService(id, updates) {
+  const { data, error } = await supabase
+    .from('services')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+// ── Admin: Staff Availability ───────────────────────────────
+
+export async function getStaffAvailability(staffId) {
+  const { data, error } = await supabase
+    .from('staff_availability')
+    .select('*')
+    .eq('staff_id', staffId)
+  if (error) throw error
+  return data
+}
+
+export async function upsertStaffAvailability(staffId, schedules) {
+  await supabase.from('staff_availability').delete().eq('staff_id', staffId)
+  if (schedules.length === 0) return
+  const { error } = await supabase
+    .from('staff_availability')
+    .insert(schedules.map((s) => ({ staff_id: staffId, ...s })))
+  if (error) throw error
+}
+
+// ── Admin: Recurring weekday off (staff_availability) ───────
+// A weekday is "recurring off" when it has any row with is_available = false.
+// We use start_time='00:00' / end_time='23:59' as the sentinel for a full-day block.
+
+export async function setRecurringDayOff(staffId, dayOfWeek, isOff) {
+  if (isOff) {
+    const { error } = await supabase.from('staff_availability').upsert(
+      { staff_id: staffId, day_of_week: dayOfWeek, start_time: '00:00', end_time: '23:59', is_available: false },
+      { onConflict: 'staff_id,day_of_week,start_time' }
+    )
+    if (error) throw error
+  } else {
+    // Remove only the sentinel "full-day off" row; leave any real working-hours rows intact.
+    const { error } = await supabase.from('staff_availability')
+      .delete()
+      .eq('staff_id', staffId)
+      .eq('day_of_week', dayOfWeek)
+      .eq('is_available', false)
+    if (error) throw error
+  }
+}
+
+// ── Admin: Specific date days off (staff_days_off) ──────────
+
+export async function getStaffDaysOff(staffId) {
+  const { data, error } = await supabase.from('staff_days_off').select('date').eq('staff_id', staffId)
+  if (error) throw error
+  return data.map((d) => d.date)
+}
+
+export async function addStaffDayOff(staffId, date) {
+  const { error } = await supabase.from('staff_days_off').insert({ staff_id: staffId, date })
+  if (error) throw error
+}
+
+export async function removeStaffDayOff(staffId, date) {
+  const { error } = await supabase.from('staff_days_off').delete().eq('staff_id', staffId).eq('date', date)
+  if (error) throw error
 }
